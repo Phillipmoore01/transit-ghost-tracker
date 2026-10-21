@@ -35,6 +35,31 @@ Measures how reliably a transit agency runs its published schedule: which schedu
 - xUnit and Testcontainers
 - GitHub Actions CI
 
+## Repository layout
+
+- `src/Transit.Gtfs` — GTFS-Realtime protobuf bindings (generated from `Protos/gtfs-realtime.proto`), vehicle position extraction, and GTFS service-day time resolution.
+- `src/Transit.Data` — EF Core model and `TransitDbContext` for PostgreSQL.
+- `src/Transit.Ingestion` — long-running worker that polls the vehicle positions feed.
+- `src/Transit.Web` — ASP.NET Core Razor Pages site for route and stop reports.
+- `tests/Transit.Gtfs.Tests` — time resolution and feed extraction tests.
+- `tests/Transit.Ingestion.Tests` — feed client tests.
+
+## Getting started
+
+Requires the .NET 10 SDK and Docker (for local PostgreSQL).
+
+```
+docker compose up -d
+dotnet build
+dotnet test
+dotnet tool install --global dotnet-ef
+dotnet ef migrations add InitialCreate --project src/Transit.Data --startup-project src/Transit.Web
+dotnet ef database update --project src/Transit.Data --startup-project src/Transit.Web
+dotnet run --project src/Transit.Ingestion
+```
+
+The feed URL and poll interval are set under `GtfsRealtime` in `src/Transit.Ingestion/appsettings.json` (default: MBTA vehicle positions every 20 seconds). The local database accepts connections from `127.0.0.1` without a password; do not reuse `docker-compose.yml` outside local development.
+
 ## Milestones
 
 - [ ] Load static GTFS for one agency into PostgreSQL

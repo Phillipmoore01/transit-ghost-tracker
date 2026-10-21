@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Transit.Data/Transit.Data.csproj" />
+    <Project Path="src/Transit.Gtfs/Transit.Gtfs.csproj" />
+    <Project Path="src/Transit.Ingestion/Transit.Ingestion.csproj" />
+    <Project Path="src/Transit.Web/Transit.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Transit.Gtfs.Tests/Transit.Gtfs.Tests.csproj" />
+    <Project Path="tests/Transit.Ingestion.Tests/Transit.Ingestion.Tests.csproj" />
+  </Folder>
+</Solution>
