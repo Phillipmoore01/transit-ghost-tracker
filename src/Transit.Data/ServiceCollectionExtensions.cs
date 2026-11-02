@@ -13,6 +13,8 @@ public static class ServiceCollectionExtensions
         var connectionString = configuration.GetConnectionString(ConnectionStringName)
             ?? throw new InvalidOperationException($"Connection string '{ConnectionStringName}' is not configured.");
 
-        return services.AddDbContext<TransitDbContext>(options => options.UseNpgsql(connectionString));
+        return services
+            .AddDbContext<TransitDbContext>(options => options.UseNpgsql(connectionString))
+            .AddScoped<VehiclePositionWriter>();
     }
 }
