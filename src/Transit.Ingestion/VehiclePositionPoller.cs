@@ -60,5 +60,7 @@ public class VehiclePositionPoller(
             Longitude = observation.Longitude,
             ObservedAt = observation.ObservedAt,
             StopId = observation.StopId,
+            CurrentStopSequence = observation.CurrentStopSequence,
+            CurrentStatus = observation.CurrentStatus,
         };
 }

@@ -8,10 +8,12 @@ public class VehiclePositionWriter(TransitDbContext context)
 {
     private const string InsertSql = """
         INSERT INTO vehicle_positions
-            (vehicle_id, trip_id, route_id, start_date, latitude, longitude, observed_at, stop_id)
+            (vehicle_id, trip_id, route_id, start_date, latitude, longitude, observed_at, stop_id,
+             current_stop_sequence, current_status)
         SELECT *
         FROM unnest(
-            @vehicle_ids, @trip_ids, @route_ids, @start_dates, @latitudes, @longitudes, @observed_ats, @stop_ids)
+            @vehicle_ids, @trip_ids, @route_ids, @start_dates, @latitudes, @longitudes, @observed_ats, @stop_ids,
+            @current_stop_sequences, @current_statuses)
         ON CONFLICT (vehicle_id, observed_at) DO NOTHING
         """;
 
@@ -33,6 +35,8 @@ public class VehiclePositionWriter(TransitDbContext context)
                 ArrayParameter("longitudes", NpgsqlDbType.Double, positions.Select(p => p.Longitude)),
                 ArrayParameter("observed_ats", NpgsqlDbType.TimestampTz, positions.Select(p => p.ObservedAt.ToUniversalTime())),
                 ArrayParameter("stop_ids", NpgsqlDbType.Text, positions.Select(p => p.StopId)),
+                ArrayParameter("current_stop_sequences", NpgsqlDbType.Integer, positions.Select(p => p.CurrentStopSequence)),
+                ArrayParameter("current_statuses", NpgsqlDbType.Integer, positions.Select(p => (int?)p.CurrentStatus)),
             ],
             cancellationToken);
     }
