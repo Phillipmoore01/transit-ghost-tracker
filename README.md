@@ -37,9 +37,9 @@ Measures how reliably a transit agency runs its published schedule: which schedu
 
 ## Repository layout
 
-- `src/Transit.Gtfs` — GTFS-Realtime protobuf bindings (generated from `Protos/gtfs-realtime.proto`), vehicle position extraction, and GTFS service-day time resolution.
-- `src/Transit.Data` — EF Core model and `TransitDbContext` for PostgreSQL.
-- `src/Transit.Ingestion` — long-running worker that polls the vehicle positions feed.
+- `src/Transit.Gtfs` — GTFS-Realtime protobuf bindings (generated from `Protos/gtfs-realtime.proto`), vehicle position extraction, GTFS service-day time resolution, and the static GTFS zip reader (`Static/`).
+- `src/Transit.Data` — EF Core model, migrations, idempotent vehicle position writer, and bulk static schedule importer for PostgreSQL.
+- `src/Transit.Ingestion` — long-running worker that polls the vehicle positions feed and refreshes the static schedule.
 - `src/Transit.Web` — ASP.NET Core Razor Pages site for route and stop reports.
 - `tests/Transit.Gtfs.Tests` — time resolution and feed extraction tests.
 - `tests/Transit.Ingestion.Tests` — feed client tests.
@@ -60,7 +60,7 @@ dotnet run --project src/Transit.Ingestion
 
 Schema changes are made with `dotnet ef migrations add <Name> --project src/Transit.Data --startup-project src/Transit.Web`. Database identifiers use snake_case.
 
-The feed URL and poll interval are set under `GtfsRealtime` in `src/Transit.Ingestion/appsettings.json` (default: MBTA vehicle positions every 20 seconds). The local database accepts connections from `127.0.0.1` without a password; do not reuse `docker-compose.yml` outside local development.
+The feed URL and poll interval are set under `GtfsRealtime` in `src/Transit.Ingestion/appsettings.json` (default: MBTA vehicle positions every 20 seconds). The static schedule URL and refresh interval are set under `GtfsStatic` (default: MBTA every 6 hours); each download is hashed and imported as a new feed only when its contents have changed, and earlier feeds are kept. The local database accepts connections from `127.0.0.1` without a password; do not reuse `docker-compose.yml` outside local development.
 
 ## Milestones
 
