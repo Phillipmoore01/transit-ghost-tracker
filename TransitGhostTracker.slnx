@@ -6,6 +6,7 @@
     <Project Path="src/Transit.Web/Transit.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Transit.Data.Tests/Transit.Data.Tests.csproj" />
     <Project Path="tests/Transit.Gtfs.Tests/Transit.Gtfs.Tests.csproj" />
     <Project Path="tests/Transit.Ingestion.Tests/Transit.Ingestion.Tests.csproj" />
   </Folder>
