@@ -342,6 +342,14 @@ namespace Transit.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<int?>("CurrentStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_status");
+
+                    b.Property<int?>("CurrentStopSequence")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_stop_sequence");
+
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision")
                         .HasColumnName("latitude");

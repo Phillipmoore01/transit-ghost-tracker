@@ -8,4 +8,6 @@ public sealed record VehicleObservation(
     double Latitude,
     double Longitude,
     DateTimeOffset ObservedAt,
-    string? StopId);
+    string? StopId,
+    int? CurrentStopSequence,
+    VehicleStopStatus? CurrentStatus);
