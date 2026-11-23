@@ -40,10 +40,11 @@ Measures how reliably a transit agency runs its published schedule: which schedu
 - `src/Transit.Gtfs` — GTFS-Realtime protobuf bindings (generated from `Protos/gtfs-realtime.proto`), vehicle position extraction, GTFS service-day time resolution, the static GTFS zip reader (`Static/`), and stop arrival inference (`Arrivals/`), and feed coverage, outage, and trip outcome rules (`Reliability/`).
 - `src/Transit.Data` — EF Core model, migrations, idempotent vehicle position writer, bulk static schedule importer, and per-service-date stop arrival and trip outcome recorders, and feed outage recorder for PostgreSQL.
 - `src/Transit.Ingestion` — long-running worker that polls the vehicle positions feed, refreshes the static schedule, logs each successful poll, detects and alerts on feed outages, and records stop arrivals and trip outcomes for completed service days.
-- `src/Transit.Web` — ASP.NET Core Razor Pages site for route and stop reports, and the `/health` endpoint.
+- `src/Transit.Web` — ASP.NET Core Razor Pages site for route and stop reports (queries in `src/Transit.Data/Reports`), and the `/health` endpoint.
 - `tests/Transit.Gtfs.Tests` — time resolution, feed extraction, stop arrival inference, feed coverage, and outage detection tests.
 - `tests/Transit.Ingestion.Tests` — feed client, service-day completion, and outage alert tests.
 - `tests/Transit.Data.Tests` — PostgreSQL integration tests (Testcontainers; require Docker).
+- `tests/Transit.Web.Tests` — page rendering tests against a seeded PostgreSQL container (require Docker).
 
 ## Getting started
 
@@ -77,6 +78,14 @@ Only `NotObserved` trips count as trips that did not run. Service dates before `
 
 The local database accepts connections from `127.0.0.1` without a password; do not reuse `docker-compose.yml` outside local development.
 
+## Report pages
+
+- `/` lists every route with tracked trips: trips tracked, share that did not run, share of stop arrivals on time, and median delay.
+- `/routes/{routeId}` breaks down trips that did not run by day type (weekday, Saturday, Sunday) and time of day (scheduled start in agency local time), summarizes arrivals, and lists the 50 most recent trips that did not run with service date and trip ID.
+- `/stops?q=` searches stops and stations by name; `/stops/{stopId}` shows arrival timeliness per route, including the platforms of a station.
+
+Every page covers the last 7, 30, or 90 service days (`?days=`, default 30) ending at the latest processed service date. Only `Observed` and `NotObserved` trips count as tracked. An arrival is on time from 1 minute early to 5 minutes late. Route and stop names come from the most recently imported schedule.
+
 ## Feed outages and health
 
 The ingestion worker checks `feed_polls` every 30 seconds (settings under `FeedHealth`). Any period longer than `MaxFeedGap` (default 2 minutes) without a new feed timestamp is recorded in `feed_outages`. This covers outages while the worker is running, and also gaps found after a restart. Each outage is logged when it starts and when it ends. If `FeedHealth:AlertWebhookUrl` is set, the same message is posted as JSON with both `text` and `content` fields, which Slack and Discord incoming webhooks accept.
@@ -101,5 +110,5 @@ The web app listens on port 8080 inside the container over plain HTTP; put a TLS
 - [x] Match positions to scheduled trips; compute per-stop arrival deltas
 - [x] Detect trips that never ran for a completed service day
 - [ ] Containerize and deploy; add gap detection and alerts
-- [ ] Public route and stop pages
+- [x] Public route and stop pages
 - [ ] Compare results against published agency performance data

@@ -1,0 +1,16 @@
+@model Transit.Web.Pages.ReportPageModel
+
+<form method="get" class="d-flex align-items-center gap-2 mb-3">
+    <label for="days" class="form-label mb-0">Period</label>
+    <select id="days" name="days" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+        @foreach (var option in Transit.Web.Pages.ReportPageModel.DayOptions)
+        {
+            <option value="@option" selected="@(option == Model.Days)">Last @option service days</option>
+        }
+    </select>
+    <noscript><button type="submit" class="btn btn-sm btn-outline-secondary">Show</button></noscript>
+    @if (Model.Period is { } period)
+    {
+        <span class="text-body-secondary small">@ReportFormat.Period(period)</span>
+    }
+</form>

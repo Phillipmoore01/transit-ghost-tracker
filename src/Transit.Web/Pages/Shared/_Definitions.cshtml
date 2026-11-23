@@ -1,0 +1,18 @@
+<details class="mb-4 small text-body-secondary">
+    <summary>How these numbers are measured</summary>
+    <ul class="mt-2">
+        <li>A trip <strong>did not run</strong> when it was in the published schedule but no vehicle reported it in the realtime feed all day, while other trips on the same route were reported and the feed was working during its scheduled time.</li>
+        <li>Trips scheduled while the realtime feed or the tracker was down are left out rather than counted as missing.</li>
+        <li>An arrival is <strong>on time</strong> between @ArrivalWindow.Early early and @ArrivalWindow.Late late compared with the schedule. Arrivals are measured at every stop except the first stop of each trip.</li>
+        <li>Times of day use the scheduled start of each trip in the agency's local time.</li>
+    </ul>
+</details>
+
+@functions {
+    private static class ArrivalWindow
+    {
+        public static string Early => $"{Transit.Data.Reports.ArrivalStats.EarlyBefore.TotalMinutes:0} min";
+
+        public static string Late => $"{Transit.Data.Reports.ArrivalStats.LateAfter.TotalMinutes:0} min";
+    }
+}

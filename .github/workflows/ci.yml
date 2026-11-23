@@ -37,7 +37,7 @@ jobs:
       - name: Start database, migrations, and web app
         run: docker compose -f compose.deploy.yml up -d --build web
 
-      - name: Check that the health endpoint reports a missing feed
+      - name: Check health endpoint and pages
         run: |
           for attempt in $(seq 1 30); do
             status=$(curl -s -o health.txt -w '%{http_code}' http://localhost:8080/health || true)
@@ -47,6 +47,8 @@ jobs:
           cat health.txt; echo
           test "$status" = "503"
           docker compose -f compose.deploy.yml ps -a migrations | grep -q "Exited (0)"
+          curl -sf http://localhost:8080/ | grep -q "No completed service days"
+          curl -sf "http://localhost:8080/stops?q=station" > /dev/null
 
       - name: Show container logs
         if: failure()

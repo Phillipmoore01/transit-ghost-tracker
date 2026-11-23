@@ -1,10 +1,48 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Routes";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<h1 class="h3">Route reliability</h1>
+<p class="lead">How many scheduled trips did not run, and how closely vehicles kept to the timetable.</p>
+
+<partial name="_PeriodSelector" model="Model" />
+<partial name="_Definitions" />
+
+@if (Model.Period is null)
+{
+    <partial name="_NoData" />
+}
+else if (Model.Routes.Count == 0)
+{
+    <div class="alert alert-secondary">No tracked trips in this period.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Route</th>
+                    <th scope="col" class="text-end">Trips tracked</th>
+                    <th scope="col" class="text-end">Did not run</th>
+                    <th scope="col" class="text-end">Arrivals on time</th>
+                    <th scope="col" class="text-end">Median delay</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var route in Model.Routes)
+                {
+                    <tr>
+                        <td><a asp-page="/Routes/Details" asp-route-routeId="@route.Route.RouteId" asp-route-days="@Model.Days">@route.Route.DisplayName</a></td>
+                        <td class="text-end">@ReportFormat.Count(route.Trips.Tracked)</td>
+                        <td class="text-end">@ReportFormat.Percent(route.Trips.NotRunShare) <span class="text-body-secondary">(@ReportFormat.Count(route.Trips.NotRun))</span></td>
+                        <td class="text-end">@ReportFormat.Percent(route.Arrivals.OnTimeShare)</td>
+                        <td class="text-end">@ReportFormat.Delay(route.Arrivals.MedianDelaySeconds)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
