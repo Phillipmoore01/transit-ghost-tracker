@@ -1,10 +1,14 @@
 using Transit.Data;
+using Transit.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddTransitDatabase(builder.Configuration);
+builder.Services.Configure<FeedHealthOptions>(builder.Configuration.GetSection(FeedHealthOptions.SectionName));
+builder.Services.AddHealthChecks()
+    .AddCheck<FeedFreshnessHealthCheck>("vehicle-positions-feed");
 
 var app = builder.Build();
 
@@ -22,6 +26,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+app.MapHealthChecks("/health");
 app.MapStaticAssets();
 app.MapRazorPages()
    .WithStaticAssets();

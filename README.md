@@ -37,12 +37,12 @@ Measures how reliably a transit agency runs its published schedule: which schedu
 
 ## Repository layout
 
-- `src/Transit.Gtfs` — GTFS-Realtime protobuf bindings (generated from `Protos/gtfs-realtime.proto`), vehicle position extraction, GTFS service-day time resolution, the static GTFS zip reader (`Static/`), and stop arrival inference (`Arrivals/`), and feed coverage and trip outcome rules (`Reliability/`).
-- `src/Transit.Data` — EF Core model, migrations, idempotent vehicle position writer, bulk static schedule importer, and per-service-date stop arrival and trip outcome recorders for PostgreSQL.
-- `src/Transit.Ingestion` — long-running worker that polls the vehicle positions feed, refreshes the static schedule, logs each successful poll, and records stop arrivals and trip outcomes for completed service days.
-- `src/Transit.Web` — ASP.NET Core Razor Pages site for route and stop reports.
-- `tests/Transit.Gtfs.Tests` — time resolution, feed extraction, stop arrival inference, and feed coverage tests.
-- `tests/Transit.Ingestion.Tests` — feed client and service-day completion tests.
+- `src/Transit.Gtfs` — GTFS-Realtime protobuf bindings (generated from `Protos/gtfs-realtime.proto`), vehicle position extraction, GTFS service-day time resolution, the static GTFS zip reader (`Static/`), and stop arrival inference (`Arrivals/`), and feed coverage, outage, and trip outcome rules (`Reliability/`).
+- `src/Transit.Data` — EF Core model, migrations, idempotent vehicle position writer, bulk static schedule importer, and per-service-date stop arrival and trip outcome recorders, and feed outage recorder for PostgreSQL.
+- `src/Transit.Ingestion` — long-running worker that polls the vehicle positions feed, refreshes the static schedule, logs each successful poll, detects and alerts on feed outages, and records stop arrivals and trip outcomes for completed service days.
+- `src/Transit.Web` — ASP.NET Core Razor Pages site for route and stop reports, and the `/health` endpoint.
+- `tests/Transit.Gtfs.Tests` — time resolution, feed extraction, stop arrival inference, feed coverage, and outage detection tests.
+- `tests/Transit.Ingestion.Tests` — feed client, service-day completion, and outage alert tests.
 - `tests/Transit.Data.Tests` — PostgreSQL integration tests (Testcontainers; require Docker).
 
 ## Getting started
@@ -76,6 +76,23 @@ Trip outcomes use the newest static schedule imported before the service day beg
 Only `NotObserved` trips count as trips that did not run. Service dates before `feed_polls` existed have no poll history, so their unobserved trips are recorded as `FeedGap`. `trip_outcome_runs` records the counts for each service date.
 
 The local database accepts connections from `127.0.0.1` without a password; do not reuse `docker-compose.yml` outside local development.
+
+## Feed outages and health
+
+The ingestion worker checks `feed_polls` every 30 seconds (settings under `FeedHealth`). Any period longer than `MaxFeedGap` (default 2 minutes) without a new feed timestamp is recorded in `feed_outages`. This covers outages while the worker is running, and also gaps found after a restart. Each outage is logged when it starts and when it ends. If `FeedHealth:AlertWebhookUrl` is set, the same message is posted as JSON with both `text` and `content` fields, which Slack and Discord incoming webhooks accept.
+
+`GET /health` on the web app returns 200 when the latest feed timestamp is at most `FeedHealth:MaxFeedAge` old (default 2 minutes), and 503 otherwise or when the database is unreachable.
+
+## Running the full stack in containers
+
+The `Dockerfile` has three targets: `migrations` (an EF Core migration bundle), `ingestion`, and `web`. `compose.deploy.yml` runs PostgreSQL with a password, applies migrations, and then starts the worker and the web app:
+
+```
+cp .env.example .env   # set POSTGRES_PASSWORD, optionally ALERT_WEBHOOK_URL and WEB_PORT
+docker compose -f compose.deploy.yml up -d --build
+```
+
+The web app listens on port 8080 inside the container over plain HTTP; put a TLS-terminating reverse proxy in front of it when exposing it publicly. Data persists in the `postgres-data` volume. The same compose file runs on any host with Docker, such as a small virtual server; CI builds all three images and checks that the stack starts and `/health` responds.
 
 ## Milestones
 

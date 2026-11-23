@@ -20,3 +20,34 @@ jobs:
       - run: dotnet build --no-restore --configuration Release
 
       - run: dotnet test --no-build --configuration Release --verbosity normal
+
+  containers:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: ci-only-password
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build images
+        run: |
+          for target in migrations ingestion web; do
+            docker build --target "$target" --tag "transit-$target:ci" .
+          done
+
+      - name: Start database, migrations, and web app
+        run: docker compose -f compose.deploy.yml up -d --build web
+
+      - name: Check that the health endpoint reports a missing feed
+        run: |
+          for attempt in $(seq 1 30); do
+            status=$(curl -s -o health.txt -w '%{http_code}' http://localhost:8080/health || true)
+            if [ "$status" != "000" ]; then break; fi
+            sleep 2
+          done
+          cat health.txt; echo
+          test "$status" = "503"
+          docker compose -f compose.deploy.yml ps -a migrations | grep -q "Exited (0)"
+
+      - name: Show container logs
+        if: failure()
+        run: docker compose -f compose.deploy.yml logs

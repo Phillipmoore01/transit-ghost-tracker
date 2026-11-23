@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
             .AddScoped<VehiclePositionWriter>()
             .AddScoped<GtfsFeedImporter>()
             .AddScoped<StopArrivalRecorder>()
-            .AddScoped<TripOutcomeRecorder>();
+            .AddScoped<TripOutcomeRecorder>()
+            .AddScoped<FeedOutageRecorder>();
     }
 }

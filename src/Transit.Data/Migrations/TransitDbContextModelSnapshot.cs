@@ -83,6 +83,37 @@ namespace Transit.Data.Migrations
                     b.ToTable("calendar_dates", (string)null);
                 });
 
+            modelBuilder.Entity("Transit.Data.FeedOutage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("DetectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("detected_at");
+
+                    b.Property<DateTimeOffset?>("EndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_feed_outages");
+
+                    b.HasIndex("StartedAt")
+                        .IsUnique()
+                        .HasDatabaseName("ix_feed_outages_started_at");
+
+                    b.ToTable("feed_outages", (string)null);
+                });
+
             modelBuilder.Entity("Transit.Data.FeedPoll", b =>
                 {
                     b.Property<long>("Id")

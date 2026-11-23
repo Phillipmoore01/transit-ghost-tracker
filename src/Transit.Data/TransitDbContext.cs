@@ -28,6 +28,8 @@ public class TransitDbContext(DbContextOptions<TransitDbContext> options) : DbCo
 
     public DbSet<FeedPoll> FeedPolls => Set<FeedPoll>();
 
+    public DbSet<FeedOutage> FeedOutages => Set<FeedOutage>();
+
     public DbSet<ScheduledTripOutcome> ScheduledTripOutcomes => Set<ScheduledTripOutcome>();
 
     public DbSet<TripOutcomeRun> TripOutcomeRuns => Set<TripOutcomeRun>();
@@ -117,6 +119,8 @@ public class TransitDbContext(DbContextOptions<TransitDbContext> options) : DbCo
         modelBuilder.Entity<StopArrivalRun>(run => run.HasKey(r => r.ServiceDate));
 
         modelBuilder.Entity<FeedPoll>(poll => poll.HasIndex(p => p.FeedTimestamp));
+
+        modelBuilder.Entity<FeedOutage>(outage => outage.HasIndex(o => o.StartedAt).IsUnique());
 
         modelBuilder.Entity<ScheduledTripOutcome>(outcome =>
         {
