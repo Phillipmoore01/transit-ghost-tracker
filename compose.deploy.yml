@@ -1,0 +1,57 @@
+name: transit-ghost-tracker
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: transit
+      POSTGRES_USER: transit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (see .env.example)}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U transit -d transit"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  migrations:
+    build:
+      context: .
+      target: migrations
+    environment:
+      ConnectionStrings__Transit: &connection-string Host=postgres;Database=transit;Username=transit;Password=${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ingestion:
+    build:
+      context: .
+      target: ingestion
+    restart: unless-stopped
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      ConnectionStrings__Transit: *connection-string
+      FeedHealth__AlertWebhookUrl: ${ALERT_WEBHOOK_URL:-}
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Transit: *connection-string
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:
