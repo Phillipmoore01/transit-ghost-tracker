@@ -22,6 +22,10 @@ public class TransitDbContext(DbContextOptions<TransitDbContext> options) : DbCo
 
     public DbSet<CalendarDate> CalendarDates => Set<CalendarDate>();
 
+    public DbSet<ObservedStopArrival> ObservedStopArrivals => Set<ObservedStopArrival>();
+
+    public DbSet<StopArrivalRun> StopArrivalRuns => Set<StopArrivalRun>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
         optionsBuilder.UseSnakeCaseNamingConvention();
 
@@ -36,6 +40,7 @@ public class TransitDbContext(DbContextOptions<TransitDbContext> options) : DbCo
 
             position.HasIndex(p => new { p.VehicleId, p.ObservedAt }).IsUnique();
             position.HasIndex(p => new { p.TripId, p.StartDate });
+            position.HasIndex(p => new { p.StartDate, p.TripId });
             position.HasIndex(p => p.ObservedAt);
         });
 
@@ -89,5 +94,20 @@ public class TransitDbContext(DbContextOptions<TransitDbContext> options) : DbCo
             calendarDate.HasKey(c => new { c.FeedId, c.ServiceId, c.Date });
             calendarDate.HasOne<GtfsFeed>().WithMany().HasForeignKey(c => c.FeedId).OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<ObservedStopArrival>(arrival =>
+        {
+            arrival.HasKey(a => new { a.TripId, a.ServiceDate, a.StopSequence });
+            arrival.Property(a => a.TripId).HasMaxLength(128);
+            arrival.Property(a => a.RouteId).HasMaxLength(64);
+            arrival.Property(a => a.StopId).HasMaxLength(64);
+            arrival.Property(a => a.VehicleId).HasMaxLength(64);
+            arrival.HasIndex(a => a.ServiceDate);
+            arrival.HasIndex(a => new { a.RouteId, a.ServiceDate });
+            arrival.HasIndex(a => new { a.StopId, a.ServiceDate });
+            arrival.HasOne<GtfsFeed>().WithMany().HasForeignKey(a => a.FeedId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<StopArrivalRun>(run => run.HasKey(r => r.ServiceDate));
     }
 }

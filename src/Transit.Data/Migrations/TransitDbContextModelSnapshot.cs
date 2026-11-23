@@ -129,6 +129,73 @@ namespace Transit.Data.Migrations
                     b.ToTable("gtfs_feeds", (string)null);
                 });
 
+            modelBuilder.Entity("Transit.Data.ObservedStopArrival", b =>
+                {
+                    b.Property<string>("TripId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("trip_id");
+
+                    b.Property<DateOnly>("ServiceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("service_date");
+
+                    b.Property<int>("StopSequence")
+                        .HasColumnType("integer")
+                        .HasColumnName("stop_sequence");
+
+                    b.Property<int>("Evidence")
+                        .HasColumnType("integer")
+                        .HasColumnName("evidence");
+
+                    b.Property<int>("FeedId")
+                        .HasColumnType("integer")
+                        .HasColumnName("feed_id");
+
+                    b.Property<DateTimeOffset>("ObservedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("observed_at");
+
+                    b.Property<string>("RouteId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("route_id");
+
+                    b.Property<DateTimeOffset?>("ScheduledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_at");
+
+                    b.Property<string>("StopId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("stop_id");
+
+                    b.Property<string>("VehicleId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("vehicle_id");
+
+                    b.HasKey("TripId", "ServiceDate", "StopSequence")
+                        .HasName("pk_observed_stop_arrivals");
+
+                    b.HasIndex("FeedId")
+                        .HasDatabaseName("ix_observed_stop_arrivals_feed_id");
+
+                    b.HasIndex("ServiceDate")
+                        .HasDatabaseName("ix_observed_stop_arrivals_service_date");
+
+                    b.HasIndex("RouteId", "ServiceDate")
+                        .HasDatabaseName("ix_observed_stop_arrivals_route_id_service_date");
+
+                    b.HasIndex("StopId", "ServiceDate")
+                        .HasDatabaseName("ix_observed_stop_arrivals_stop_id_service_date");
+
+                    b.ToTable("observed_stop_arrivals", (string)null);
+                });
+
             modelBuilder.Entity("Transit.Data.Route", b =>
                 {
                     b.Property<int>("FeedId")
@@ -247,6 +314,34 @@ namespace Transit.Data.Migrations
                         .HasName("pk_stops");
 
                     b.ToTable("stops", (string)null);
+                });
+
+            modelBuilder.Entity("Transit.Data.StopArrivalRun", b =>
+                {
+                    b.Property<DateOnly>("ServiceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("service_date");
+
+                    b.Property<int>("ArrivalsRecorded")
+                        .HasColumnType("integer")
+                        .HasColumnName("arrivals_recorded");
+
+                    b.Property<DateTimeOffset>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<int>("TripsMatched")
+                        .HasColumnType("integer")
+                        .HasColumnName("trips_matched");
+
+                    b.Property<int>("TripsObserved")
+                        .HasColumnType("integer")
+                        .HasColumnName("trips_observed");
+
+                    b.HasKey("ServiceDate")
+                        .HasName("pk_stop_arrival_runs");
+
+                    b.ToTable("stop_arrival_runs", (string)null);
                 });
 
             modelBuilder.Entity("Transit.Data.StopTime", b =>
@@ -394,6 +489,9 @@ namespace Transit.Data.Migrations
                     b.HasIndex("ObservedAt")
                         .HasDatabaseName("ix_vehicle_positions_observed_at");
 
+                    b.HasIndex("StartDate", "TripId")
+                        .HasDatabaseName("ix_vehicle_positions_start_date_trip_id");
+
                     b.HasIndex("TripId", "StartDate")
                         .HasDatabaseName("ix_vehicle_positions_trip_id_start_date");
 
@@ -422,6 +520,16 @@ namespace Transit.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_calendar_dates_gtfs_feeds_feed_id");
+                });
+
+            modelBuilder.Entity("Transit.Data.ObservedStopArrival", b =>
+                {
+                    b.HasOne("Transit.Data.GtfsFeed", null)
+                        .WithMany()
+                        .HasForeignKey("FeedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_observed_stop_arrivals_gtfs_feeds_feed_id");
                 });
 
             modelBuilder.Entity("Transit.Data.Route", b =>
