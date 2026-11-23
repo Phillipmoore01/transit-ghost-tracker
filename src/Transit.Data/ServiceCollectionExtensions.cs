@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         return services
             .AddDbContext<TransitDbContext>(options => options.UseNpgsql(connectionString))
             .AddScoped<VehiclePositionWriter>()
-            .AddScoped<GtfsFeedImporter>();
+            .AddScoped<GtfsFeedImporter>()
+            .AddScoped<StopArrivalRecorder>();
     }
 }
