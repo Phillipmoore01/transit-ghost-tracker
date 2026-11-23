@@ -1,3 +1,5 @@
+using Transit.Gtfs;
+
 namespace Transit.Data;
 
 public class VehiclePosition
@@ -19,4 +21,8 @@ public class VehiclePosition
     public DateTimeOffset ObservedAt { get; set; }
 
     public string? StopId { get; set; }
+
+    public int? CurrentStopSequence { get; set; }
+
+    public VehicleStopStatus? CurrentStatus { get; set; }
 }

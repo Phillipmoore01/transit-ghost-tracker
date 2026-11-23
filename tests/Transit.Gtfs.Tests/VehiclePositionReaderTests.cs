@@ -22,8 +22,35 @@ public class VehiclePositionReaderTests
                 (double)42.35f,
                 (double)-71.05f,
                 DateTimeOffset.FromUnixTimeSeconds((long)ObservedAtUnixSeconds),
-                "place-sstat"),
+                "place-sstat",
+                5,
+                VehicleStopStatus.StoppedAt),
             observation);
+    }
+
+    [Fact]
+    public void Assumes_in_transit_when_the_stop_status_is_absent()
+    {
+        var vehicle = Vehicle("y1234", "trip-42");
+        vehicle.ClearCurrentStatus();
+
+        var observation = Assert.Single(VehiclePositionReader.Read(Feed(Entity("1", vehicle))));
+
+        Assert.Equal(5, observation.CurrentStopSequence);
+        Assert.Equal(VehicleStopStatus.InTransitTo, observation.CurrentStatus);
+    }
+
+    [Fact]
+    public void Leaves_stop_progress_empty_when_no_stop_is_reported()
+    {
+        var vehicle = Vehicle("y1234", "trip-42", stopId: "");
+        vehicle.ClearCurrentStopSequence();
+
+        var observation = Assert.Single(VehiclePositionReader.Read(Feed(Entity("1", vehicle))));
+
+        Assert.Null(observation.StopId);
+        Assert.Null(observation.CurrentStopSequence);
+        Assert.Null(observation.CurrentStatus);
     }
 
     [Fact]
@@ -89,5 +116,7 @@ public class VehiclePositionReaderTests
             Position = new Position { Latitude = 42.35f, Longitude = -71.05f },
             Timestamp = ObservedAtUnixSeconds,
             StopId = stopId,
+            CurrentStopSequence = 5,
+            CurrentStatus = TransitRealtime.VehiclePosition.Types.VehicleStopStatus.StoppedAt,
         };
 }

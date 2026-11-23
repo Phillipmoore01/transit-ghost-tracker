@@ -23,6 +23,9 @@ public static class VehiclePositionReader
                 continue;
             }
 
+            var stopSequence = vehicle.HasCurrentStopSequence ? (int?)vehicle.CurrentStopSequence : null;
+            var stopId = NullIfEmpty(vehicle.StopId);
+
             yield return new VehicleObservation(
                 vehicleId,
                 tripId,
@@ -31,7 +34,9 @@ public static class VehiclePositionReader
                 position.Latitude,
                 position.Longitude,
                 DateTimeOffset.FromUnixTimeSeconds((long)vehicle.Timestamp),
-                NullIfEmpty(vehicle.StopId));
+                stopId,
+                stopSequence,
+                stopSequence is null && stopId is null ? null : (VehicleStopStatus)vehicle.CurrentStatus);
         }
     }
 

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Transit.Gtfs;
 
 namespace Transit.Data.Tests;
 
@@ -54,6 +55,8 @@ public sealed class VehiclePositionWriterTests(PostgresFixture database) : IClas
         sparse.RouteId = null;
         sparse.StartDate = null;
         sparse.StopId = null;
+        sparse.CurrentStopSequence = null;
+        sparse.CurrentStatus = null;
 
         await InsertAsync([complete, sparse]);
 
@@ -95,6 +98,8 @@ public sealed class VehiclePositionWriterTests(PostgresFixture database) : IClas
             Longitude = -71.05,
             ObservedAt = observedAt,
             StopId = "place-sstat",
+            CurrentStopSequence = 5,
+            CurrentStatus = VehicleStopStatus.StoppedAt,
         };
 
     private static void AssertSameFields(VehiclePosition expected, VehiclePosition actual)
@@ -107,5 +112,7 @@ public sealed class VehiclePositionWriterTests(PostgresFixture database) : IClas
         Assert.Equal(expected.Longitude, actual.Longitude);
         Assert.Equal(expected.ObservedAt, actual.ObservedAt);
         Assert.Equal(expected.StopId, actual.StopId);
+        Assert.Equal(expected.CurrentStopSequence, actual.CurrentStopSequence);
+        Assert.Equal(expected.CurrentStatus, actual.CurrentStatus);
     }
 }
