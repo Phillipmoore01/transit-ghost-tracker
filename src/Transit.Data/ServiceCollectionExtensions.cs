@@ -22,6 +22,7 @@ public static class ServiceCollectionExtensions
             .AddScoped<GtfsFeedImporter>()
             .AddScoped<StopArrivalRecorder>()
             .AddScoped<TripOutcomeRecorder>()
-            .AddScoped<FeedOutageRecorder>();
+            .AddScoped<FeedOutageRecorder>()
+            .AddScoped<Reports.ReliabilityReports>();
     }
 }

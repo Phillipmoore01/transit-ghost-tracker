@@ -1,0 +1,37 @@
+@page "/stops"
+@model Transit.Web.Pages.Stops.IndexModel
+@{
+    ViewData["Title"] = "Stops";
+}
+
+<h1 class="h3">Find a stop</h1>
+
+<form method="get" class="row g-2 mb-4" role="search">
+    <div class="col-sm-8 col-md-6">
+        <label for="q" class="visually-hidden">Stop or station name</label>
+        <input id="q" name="q" type="search" class="form-control" placeholder="Stop or station name" value="@Model.Query" autofocus />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+</form>
+
+@if (!string.IsNullOrWhiteSpace(Model.Query))
+{
+    if (Model.Matches.Count == 0)
+    {
+        <p class="text-body-secondary">No stops match “@Model.Query”.</p>
+    }
+    else
+    {
+        <ul class="list-group">
+            @foreach (var stop in Model.Matches)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a asp-page="/Stops/Details" asp-route-stopId="@stop.StopId">@stop.Name</a>
+                    <span class="text-body-secondary small">@(stop.IsStation ? "Station" : $"Stop {stop.StopId}")</span>
+                </li>
+            }
+        </ul>
+    }
+}

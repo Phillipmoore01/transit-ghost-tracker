@@ -1,0 +1,59 @@
+@page "/stops/{stopId}"
+@model Transit.Web.Pages.Stops.DetailsModel
+@{
+    ViewData["Title"] = Model.Report?.Name ?? "Stop";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/Stops/Index">Stops</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+    </ol>
+</nav>
+
+@if (Model.Report is not { } report)
+{
+    <partial name="_NoData" />
+    return;
+}
+
+<h1 class="h3">@report.Name</h1>
+
+<partial name="_PeriodSelector" model="Model" />
+<partial name="_Definitions" />
+
+@if (report.Routes.Count == 0)
+{
+    <p class="text-body-secondary">No arrivals were measured at this stop in this period.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Route</th>
+                    <th scope="col" class="text-end">Arrivals measured</th>
+                    <th scope="col" class="text-end">Early</th>
+                    <th scope="col" class="text-end">On time</th>
+                    <th scope="col" class="text-end">Late</th>
+                    <th scope="col" class="text-end">Median delay</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var route in report.Routes)
+                {
+                    var arrivals = route.Arrivals;
+                    <tr>
+                        <td><a asp-page="/Routes/Details" asp-route-routeId="@route.Route.RouteId" asp-route-days="@Model.Days">@route.Route.DisplayName</a></td>
+                        <td class="text-end">@ReportFormat.Count(arrivals.Measured)</td>
+                        <td class="text-end">@ReportFormat.Percent((double)arrivals.Early / arrivals.Measured)</td>
+                        <td class="text-end">@ReportFormat.Percent(arrivals.OnTimeShare)</td>
+                        <td class="text-end">@ReportFormat.Percent((double)arrivals.Late / arrivals.Measured)</td>
+                        <td class="text-end">@ReportFormat.Delay(arrivals.MedianDelaySeconds)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

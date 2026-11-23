@@ -1,0 +1,127 @@
+@page "/routes/{routeId}"
+@model Transit.Web.Pages.Routes.DetailsModel
+@using Transit.Data.Reports
+@{
+    ViewData["Title"] = Model.Report?.Route.DisplayName ?? "Route";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/Index" asp-route-days="@Model.Days">Routes</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+    </ol>
+</nav>
+
+@if (Model.Report is not { } report)
+{
+    <partial name="_NoData" />
+    return;
+}
+
+<h1 class="h3">@report.Route.DisplayName</h1>
+
+<partial name="_PeriodSelector" model="Model" />
+
+<p class="lead">
+    @if (report.Trips.Tracked == 0)
+    {
+        <text>No trips on this route could be tracked in this period.</text>
+    }
+    else
+    {
+        <text><strong>@ReportFormat.Percent(report.Trips.NotRunShare)</strong> of tracked trips did not run (@ReportFormat.Count(report.Trips.NotRun) of @ReportFormat.Count(report.Trips.Tracked)).</text>
+    }
+    @if (report.Arrivals.Measured > 0)
+    {
+        <text><strong>@ReportFormat.Percent(report.Arrivals.OnTimeShare)</strong> of measured stop arrivals were on time.</text>
+    }
+</p>
+
+@if (report.TripsInFeedGaps > 0)
+{
+    <p class="small text-body-secondary">@ReportFormat.Count(report.TripsInFeedGaps) unreported trips were scheduled while the realtime feed was unavailable and are not counted.</p>
+}
+
+<partial name="_Definitions" />
+
+<h2 class="h5">Trips that did not run</h2>
+<div class="table-responsive mb-4">
+    <table class="table table-sm align-middle">
+        <thead>
+            <tr>
+                <th scope="col">Time of day</th>
+                @foreach (var dayType in Enum.GetValues<DayType>())
+                {
+                    <th scope="col" class="text-end">@dayType</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var timeOfDay in Enum.GetValues<TimeOfDay>())
+            {
+                <tr>
+                    <th scope="row" class="fw-normal">@ServicePeriods.Describe(timeOfDay)</th>
+                    @foreach (var dayType in Enum.GetValues<DayType>())
+                    {
+                        var cell = Model.CellFor(dayType, timeOfDay);
+                        <td class="text-end @(cell.Tracked < ReportFormat.SmallSample ? "text-body-secondary" : "")">@ReportFormat.Share(cell)</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="small text-body-secondary">Cells with fewer than @ReportFormat.SmallSample tracked trips are shown in grey.</p>
+</div>
+
+<h2 class="h5">Arrivals compared with the schedule</h2>
+@if (report.Arrivals.Measured == 0)
+{
+    <p class="text-body-secondary">No stop arrivals were measured in this period.</p>
+}
+else
+{
+    <dl class="row mb-4">
+        <dt class="col-sm-3">Arrivals measured</dt>
+        <dd class="col-sm-9">@ReportFormat.Count(report.Arrivals.Measured)</dd>
+        <dt class="col-sm-3">Early</dt>
+        <dd class="col-sm-9">@ReportFormat.Percent((double)report.Arrivals.Early / report.Arrivals.Measured)</dd>
+        <dt class="col-sm-3">On time</dt>
+        <dd class="col-sm-9">@ReportFormat.Percent(report.Arrivals.OnTimeShare)</dd>
+        <dt class="col-sm-3">Late</dt>
+        <dd class="col-sm-9">@ReportFormat.Percent((double)report.Arrivals.Late / report.Arrivals.Measured)</dd>
+        <dt class="col-sm-3">Median delay</dt>
+        <dd class="col-sm-9">@ReportFormat.Delay(report.Arrivals.MedianDelaySeconds)</dd>
+    </dl>
+}
+
+<h2 class="h5">Most recent trips that did not run</h2>
+@if (report.RecentMissingTrips.Count == 0)
+{
+    <p class="text-body-secondary">None in this period.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Service date</th>
+                    <th scope="col">Scheduled start</th>
+                    <th scope="col">Destination</th>
+                    <th scope="col">Trip ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var trip in report.RecentMissingTrips)
+                {
+                    <tr>
+                        <td>@ReportFormat.Date(trip.ServiceDate)</td>
+                        <td>@ReportFormat.LocalTime(trip.ScheduledStart, Model.TimeZone)</td>
+                        <td>@(trip.Headsign ?? ReportFormat.Direction(trip.DirectionId))</td>
+                        <td><code>@trip.TripId</code></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

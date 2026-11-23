@@ -9,5 +9,6 @@
     <Project Path="tests/Transit.Data.Tests/Transit.Data.Tests.csproj" />
     <Project Path="tests/Transit.Gtfs.Tests/Transit.Gtfs.Tests.csproj" />
     <Project Path="tests/Transit.Ingestion.Tests/Transit.Ingestion.Tests.csproj" />
+    <Project Path="tests/Transit.Web.Tests/Transit.Web.Tests.csproj" />
   </Folder>
 </Solution>
