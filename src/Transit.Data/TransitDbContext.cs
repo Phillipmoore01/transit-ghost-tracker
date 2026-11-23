@@ -26,6 +26,12 @@ public class TransitDbContext(DbContextOptions<TransitDbContext> options) : DbCo
 
     public DbSet<StopArrivalRun> StopArrivalRuns => Set<StopArrivalRun>();
 
+    public DbSet<FeedPoll> FeedPolls => Set<FeedPoll>();
+
+    public DbSet<ScheduledTripOutcome> ScheduledTripOutcomes => Set<ScheduledTripOutcome>();
+
+    public DbSet<TripOutcomeRun> TripOutcomeRuns => Set<TripOutcomeRun>();
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
         optionsBuilder.UseSnakeCaseNamingConvention();
 
@@ -109,5 +115,22 @@ public class TransitDbContext(DbContextOptions<TransitDbContext> options) : DbCo
         });
 
         modelBuilder.Entity<StopArrivalRun>(run => run.HasKey(r => r.ServiceDate));
+
+        modelBuilder.Entity<FeedPoll>(poll => poll.HasIndex(p => p.FeedTimestamp));
+
+        modelBuilder.Entity<ScheduledTripOutcome>(outcome =>
+        {
+            outcome.HasKey(o => new { o.ServiceDate, o.TripId });
+            outcome.Property(o => o.TripId).HasMaxLength(128);
+            outcome.Property(o => o.RouteId).HasMaxLength(64);
+            outcome.HasIndex(o => new { o.RouteId, o.ServiceDate });
+            outcome.HasOne<GtfsFeed>().WithMany().HasForeignKey(o => o.FeedId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TripOutcomeRun>(run =>
+        {
+            run.HasKey(r => r.ServiceDate);
+            run.HasOne<GtfsFeed>().WithMany().HasForeignKey(r => r.FeedId).OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

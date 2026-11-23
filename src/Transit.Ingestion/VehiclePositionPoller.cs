@@ -9,6 +9,7 @@ namespace Transit.Ingestion;
 public class VehiclePositionPoller(
     GtfsRealtimeClient client,
     IServiceScopeFactory scopeFactory,
+    TimeProvider timeProvider,
     IOptions<GtfsRealtimeOptions> options,
     ILogger<VehiclePositionPoller> logger) : BackgroundService
 {
@@ -34,9 +35,24 @@ public class VehiclePositionPoller(
             var writer = scope.ServiceProvider.GetRequiredService<VehiclePositionWriter>();
             var inserted = await writer.InsertNewAsync(positions, cancellationToken);
 
+            var polledAt = timeProvider.GetUtcNow();
+            var feedTimestamp = feed.Header is { Timestamp: > 0 } header
+                ? DateTimeOffset.FromUnixTimeSeconds((long)header.Timestamp)
+                : polledAt;
+
+            await writer.RecordPollAsync(
+                new FeedPoll
+                {
+                    PolledAt = polledAt,
+                    FeedTimestamp = feedTimestamp,
+                    EntityCount = feed.Entity.Count,
+                    PositionsInserted = inserted,
+                },
+                cancellationToken);
+
             logger.LogInformation(
                 "Feed at {FeedTimestamp:O}: {EntityCount} entities, {ObservationCount} usable vehicle positions, {InsertedCount} new",
-                DateTimeOffset.FromUnixTimeSeconds((long)feed.Header.Timestamp),
+                feedTimestamp,
                 feed.Entity.Count,
                 positions.Count,
                 inserted);

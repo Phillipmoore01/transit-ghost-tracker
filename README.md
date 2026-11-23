@@ -37,11 +37,11 @@ Measures how reliably a transit agency runs its published schedule: which schedu
 
 ## Repository layout
 
-- `src/Transit.Gtfs` — GTFS-Realtime protobuf bindings (generated from `Protos/gtfs-realtime.proto`), vehicle position extraction, GTFS service-day time resolution, the static GTFS zip reader (`Static/`), and stop arrival inference (`Arrivals/`).
-- `src/Transit.Data` — EF Core model, migrations, idempotent vehicle position writer, bulk static schedule importer, and per-service-date stop arrival recorder for PostgreSQL.
-- `src/Transit.Ingestion` — long-running worker that polls the vehicle positions feed, refreshes the static schedule, and records stop arrivals for completed service days.
+- `src/Transit.Gtfs` — GTFS-Realtime protobuf bindings (generated from `Protos/gtfs-realtime.proto`), vehicle position extraction, GTFS service-day time resolution, the static GTFS zip reader (`Static/`), and stop arrival inference (`Arrivals/`), and feed coverage and trip outcome rules (`Reliability/`).
+- `src/Transit.Data` — EF Core model, migrations, idempotent vehicle position writer, bulk static schedule importer, and per-service-date stop arrival and trip outcome recorders for PostgreSQL.
+- `src/Transit.Ingestion` — long-running worker that polls the vehicle positions feed, refreshes the static schedule, logs each successful poll, and records stop arrivals and trip outcomes for completed service days.
 - `src/Transit.Web` — ASP.NET Core Razor Pages site for route and stop reports.
-- `tests/Transit.Gtfs.Tests` — time resolution, feed extraction, and stop arrival inference tests.
+- `tests/Transit.Gtfs.Tests` — time resolution, feed extraction, stop arrival inference, and feed coverage tests.
 - `tests/Transit.Ingestion.Tests` — feed client and service-day completion tests.
 - `tests/Transit.Data.Tests` — PostgreSQL integration tests (Testcontainers; require Docker).
 
@@ -62,7 +62,18 @@ Schema changes are made with `dotnet ef migrations add <Name> --project src/Tran
 
 The feed URL and poll interval are set under `GtfsRealtime` in `src/Transit.Ingestion/appsettings.json` (default: MBTA vehicle positions every 20 seconds). The static schedule URL and refresh interval are set under `GtfsStatic` (default: MBTA every 6 hours); each download is hashed and imported as a new feed only when its contents have changed, and earlier feeds are kept.
 
-Stop arrivals are recorded once per completed service date under `StopArrivals` (default: checked every 30 minutes, looking back 3 days). A service date counts as complete 30 hours after its start in the agency time zone, so trips scheduled past midnight are included. Each observed trip is matched by trip ID to the newest static schedule imported before the trip was first seen. A stop's arrival is the first report of the vehicle stopped there; when polling missed the stop, the arrival is interpolated along the scheduled times between the reports before and after it, provided they are at most 3 minutes apart. Each row in `observed_stop_arrivals` records which method was used (`evidence`). The first stop of a trip is not recorded, and positions without a trip start date are not used. Rerunning a service date replaces its rows; `stop_arrival_runs` records the counts for each run.
+Each successful poll is logged in `feed_polls` with the feed's own timestamp.
+
+Stop arrivals and trip outcomes are recorded once per completed service date; the settings are under `ServiceDays` (default: checked every 30 minutes, looking back 3 days). A service date counts as complete 30 hours after its start in the agency time zone, so trips scheduled past midnight are included. Each observed trip is matched by trip ID to the newest static schedule imported before the trip was first seen. A stop's arrival is the first report of the vehicle stopped there; when polling missed the stop, the arrival is interpolated along the scheduled times between the reports before and after it, provided they are at most 3 minutes apart. Each row in `observed_stop_arrivals` records which method was used (`evidence`). The first stop of a trip is not recorded, and positions without a trip start date are not used. Rerunning a service date replaces its rows; `stop_arrival_runs` records the counts for each run.
+
+Trip outcomes use the newest static schedule imported before the service day began. Every trip whose service is active on that date (from `calendar.txt` and `calendar_dates.txt`) gets one row in `scheduled_trip_outcomes`:
+
+- `Observed` — at least one vehicle position reported the trip for that service date.
+- `NotObserved` — the trip was never reported, its route had other trips observed that day, and the feed had no gap longer than 2 minutes (`MaxFeedGap`) during the trip's scheduled time.
+- `FeedGap` — the trip was never reported, but polling or the feed was interrupted during its scheduled time, so it cannot be counted as missing.
+- `RouteNotTracked` — no trip on the route was observed that day, which usually means the route is not in the realtime feed.
+
+Only `NotObserved` trips count as trips that did not run. Service dates before `feed_polls` existed have no poll history, so their unobserved trips are recorded as `FeedGap`. `trip_outcome_runs` records the counts for each service date.
 
 The local database accepts connections from `127.0.0.1` without a password; do not reuse `docker-compose.yml` outside local development.
 
@@ -71,7 +82,7 @@ The local database accepts connections from `127.0.0.1` without a password; do n
 - [x] Load static GTFS for one agency into PostgreSQL
 - [x] Poll and persist vehicle positions with idempotent writes
 - [x] Match positions to scheduled trips; compute per-stop arrival deltas
-- [ ] Detect trips that never ran for a completed service day
+- [x] Detect trips that never ran for a completed service day
 - [ ] Containerize and deploy; add gap detection and alerts
 - [ ] Public route and stop pages
 - [ ] Compare results against published agency performance data

@@ -41,6 +41,12 @@ public class VehiclePositionWriter(TransitDbContext context)
             cancellationToken);
     }
 
+    public async Task RecordPollAsync(FeedPoll poll, CancellationToken cancellationToken)
+    {
+        context.FeedPolls.Add(poll);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
     private static NpgsqlParameter ArrayParameter<T>(string name, NpgsqlDbType elementType, IEnumerable<T> values) =>
         new(name, NpgsqlDbType.Array | elementType) { Value = values.ToArray() };
 }
