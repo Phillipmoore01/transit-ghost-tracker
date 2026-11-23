@@ -83,6 +83,40 @@ namespace Transit.Data.Migrations
                     b.ToTable("calendar_dates", (string)null);
                 });
 
+            modelBuilder.Entity("Transit.Data.FeedPoll", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("EntityCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("entity_count");
+
+                    b.Property<DateTimeOffset>("FeedTimestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("feed_timestamp");
+
+                    b.Property<DateTimeOffset>("PolledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("polled_at");
+
+                    b.Property<int>("PositionsInserted")
+                        .HasColumnType("integer")
+                        .HasColumnName("positions_inserted");
+
+                    b.HasKey("Id")
+                        .HasName("pk_feed_polls");
+
+                    b.HasIndex("FeedTimestamp")
+                        .HasDatabaseName("ix_feed_polls_feed_timestamp");
+
+                    b.ToTable("feed_polls", (string)null);
+                });
+
             modelBuilder.Entity("Transit.Data.GtfsFeed", b =>
                 {
                     b.Property<int>("Id")
@@ -226,6 +260,59 @@ namespace Transit.Data.Migrations
                         .HasName("pk_routes");
 
                     b.ToTable("routes", (string)null);
+                });
+
+            modelBuilder.Entity("Transit.Data.ScheduledTripOutcome", b =>
+                {
+                    b.Property<DateOnly>("ServiceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("service_date");
+
+                    b.Property<string>("TripId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("trip_id");
+
+                    b.Property<int?>("DirectionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("direction_id");
+
+                    b.Property<int>("FeedId")
+                        .HasColumnType("integer")
+                        .HasColumnName("feed_id");
+
+                    b.Property<DateTimeOffset?>("FirstObservedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("first_observed_at");
+
+                    b.Property<int>("Outcome")
+                        .HasColumnType("integer")
+                        .HasColumnName("outcome");
+
+                    b.Property<string>("RouteId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("route_id");
+
+                    b.Property<DateTimeOffset>("ScheduledEnd")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_end");
+
+                    b.Property<DateTimeOffset>("ScheduledStart")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_start");
+
+                    b.HasKey("ServiceDate", "TripId")
+                        .HasName("pk_scheduled_trip_outcomes");
+
+                    b.HasIndex("FeedId")
+                        .HasDatabaseName("ix_scheduled_trip_outcomes_feed_id");
+
+                    b.HasIndex("RouteId", "ServiceDate")
+                        .HasDatabaseName("ix_scheduled_trip_outcomes_route_id_service_date");
+
+                    b.ToTable("scheduled_trip_outcomes", (string)null);
                 });
 
             modelBuilder.Entity("Transit.Data.ServiceCalendar", b =>
@@ -428,6 +515,49 @@ namespace Transit.Data.Migrations
                     b.ToTable("trips", (string)null);
                 });
 
+            modelBuilder.Entity("Transit.Data.TripOutcomeRun", b =>
+                {
+                    b.Property<DateOnly>("ServiceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("service_date");
+
+                    b.Property<DateTimeOffset>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<int>("FeedId")
+                        .HasColumnType("integer")
+                        .HasColumnName("feed_id");
+
+                    b.Property<int>("TripsInFeedGaps")
+                        .HasColumnType("integer")
+                        .HasColumnName("trips_in_feed_gaps");
+
+                    b.Property<int>("TripsNotObserved")
+                        .HasColumnType("integer")
+                        .HasColumnName("trips_not_observed");
+
+                    b.Property<int>("TripsObserved")
+                        .HasColumnType("integer")
+                        .HasColumnName("trips_observed");
+
+                    b.Property<int>("TripsOnUntrackedRoutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("trips_on_untracked_routes");
+
+                    b.Property<int>("TripsScheduled")
+                        .HasColumnType("integer")
+                        .HasColumnName("trips_scheduled");
+
+                    b.HasKey("ServiceDate")
+                        .HasName("pk_trip_outcome_runs");
+
+                    b.HasIndex("FeedId")
+                        .HasDatabaseName("ix_trip_outcome_runs_feed_id");
+
+                    b.ToTable("trip_outcome_runs", (string)null);
+                });
+
             modelBuilder.Entity("Transit.Data.VehiclePosition", b =>
                 {
                     b.Property<long>("Id")
@@ -542,6 +672,16 @@ namespace Transit.Data.Migrations
                         .HasConstraintName("fk_routes_gtfs_feeds_feed_id");
                 });
 
+            modelBuilder.Entity("Transit.Data.ScheduledTripOutcome", b =>
+                {
+                    b.HasOne("Transit.Data.GtfsFeed", null)
+                        .WithMany()
+                        .HasForeignKey("FeedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_scheduled_trip_outcomes_gtfs_feeds_feed_id");
+                });
+
             modelBuilder.Entity("Transit.Data.ServiceCalendar", b =>
                 {
                     b.HasOne("Transit.Data.GtfsFeed", null)
@@ -580,6 +720,16 @@ namespace Transit.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_trips_gtfs_feeds_feed_id");
+                });
+
+            modelBuilder.Entity("Transit.Data.TripOutcomeRun", b =>
+                {
+                    b.HasOne("Transit.Data.GtfsFeed", null)
+                        .WithMany()
+                        .HasForeignKey("FeedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_trip_outcome_runs_gtfs_feeds_feed_id");
                 });
 #pragma warning restore 612, 618
         }
